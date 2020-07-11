@@ -54,6 +54,14 @@ class Wnd extends Phaser.GameObjects.Container{
         this.setVisible(false);
         this.setSize(windBG.width, windBG.height);
 
+        if(content){
+            content.setScale(0.6);
+            content.x = -100;
+            content.y = -3000;
+            this.add(content);
+            this.type = "chat";
+        }
+
         let bar = scene.add.image(0,-200, 'bar');
         bar.setInteractive();
         this.add(bar);
@@ -64,14 +72,6 @@ class Wnd extends Phaser.GameObjects.Container{
         let wndTitle = scene.add.text(-300, -215, title, { fontFamily: 'Helvetica', fontSize: '28px' });
         this.add(wndTitle);     
         
-        
-        if(content){
-            content.setScale(0.6);
-            content.x = -100;
-            content.y = -3000;
-            this.add(content);
-        }
-
         let clickArea = new Phaser.GameObjects.Rectangle(scene,0,0, windBG.width, windBG.height, 0x707070,99);
         clickArea.setInteractive();
         this.add(clickArea);
@@ -99,6 +99,7 @@ class Wnd extends Phaser.GameObjects.Container{
         }, this);
     }
     zInd = 0;
+    type = null;
 }
 
 class Bubble extends Phaser.GameObjects.Container{
@@ -193,13 +194,13 @@ class Scene extends Phaser.Scene {
         }
 
         let scrollArea = new Phaser.GameObjects.Rectangle(this, 150, chatPos, 1000, 2*length, 0xcfcfcf, 99.5);
+        chats.add(scrollArea);
         scrollArea.setInteractive();
 
         //@ts-ignore
         let shape = this.make.graphics().fillStyle(0).fillRect(20, 0, 850, 550);
         shape.x = 400;
         shape.y = 250;
-        chats.add(scrollArea);
         chats.mask = new Phaser.Display.Masks.GeometryMask(this, shape);
         
         scrollArea.on('wheel', function(pointer){
@@ -223,11 +224,13 @@ class Scene extends Phaser.Scene {
         let folder:Icon = new Icon(this, 100, 300, 'folder', highlight, folderWnd);
 
         this.input.on('pointermove', function(e){
+            let scale = 1 - (1.5*0.6);
             if(draggedItem){
                 draggedItem.setPosition(draggedItem.x + e.position.x - e.prevPosition.x, draggedItem.y + e.position.y - e.prevPosition.y);
-                shape.setPosition(shape.x + e.position.x - e.prevPosition.x, shape.y + e.position.y - e.prevPosition.y);
-                scrollArea.setPosition(scrollArea.x + e.position.x - e.prevPosition.x, scrollArea.y + e.position.y - e.prevPosition.y);
-
+                if(draggedItem.type === "chat"){
+                    shape.setPosition(shape.x + e.position.x - e.prevPosition.x, shape.y + e.position.y - e.prevPosition.y);
+                    scrollArea.setPosition(scrollArea.x + e.position.x*scale - e.prevPosition.x*scale, scrollArea.y + e.position.y*scale - e.prevPosition.y*scale);
+                }
                 this.input.on(Phaser.Input.Events.POINTER_UP, function(){
                     draggedItem = null;
                 }, this)
