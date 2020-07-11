@@ -170,9 +170,9 @@ class Scene extends Phaser.Scene {
 
         let highlight:Phaser.GameObjects.Rectangle = this.add.rectangle(0, 0, 200, 200);
 
-        let chatPos = -200*chatArr.length - 200;
+        let chatPos = 0;
 
-        let chats = new Phaser.GameObjects.Container(this, 600, chatPos);
+        let chats = new Phaser.GameObjects.Container(this, 0,0);
         let prevY = 0;
         let length;
         for(let i = 0; i < chatArr.length; i++){
@@ -192,10 +192,7 @@ class Scene extends Phaser.Scene {
             length = chat.y;
         }
 
-        console.log(length);
-        let scrollArea = new Phaser.GameObjects.Rectangle(this, 180, 800, 930, 2*length, 0xcfcfcf, 99.5);
-        // scrollArea.x = 400;
-        // scrollArea.y = 250;
+        let scrollArea = new Phaser.GameObjects.Rectangle(this, 150, chatPos, 1000, 2*length, 0xcfcfcf, 99.5);
         scrollArea.setInteractive();
 
         //@ts-ignore
@@ -204,7 +201,6 @@ class Scene extends Phaser.Scene {
         shape.y = 250;
         chats.add(scrollArea);
         chats.mask = new Phaser.Display.Masks.GeometryMask(this, shape);
-        // scrollArea.mask = new Phaser.Display.Masks.GeometryMask(this, shape);
         
         scrollArea.on('wheel', function(pointer){
             // if(
