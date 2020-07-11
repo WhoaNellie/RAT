@@ -1,4 +1,4 @@
-const chatArr = [
+const chatArr2d = [
     {
         "msg": "h-hewwo is anybody thewe",
         "from": "you"
@@ -85,4 +85,4 @@ const chatArr = [
     }
 ]
 
-export default chatArr;
+export default chatArr2d;

@@ -1,7 +1,10 @@
 let click = 0;
 let draggedItem;
+let scrollArea;
+let shape;
 
-import chatArr from './chats';
+import chatArr2d from './chats';
+import files from './files';
 
 
 class Icon extends Phaser.GameObjects.Image{
@@ -44,7 +47,7 @@ class Icon extends Phaser.GameObjects.Image{
 }
 
 class Wnd extends Phaser.GameObjects.Container{
-    constructor(scene:Scene, x:number, y:number, title:string, content?:Phaser.GameObjects.Container){
+    constructor(scene:Scene, x:number, y:number, title:string, content?:Phaser.GameObjects.Container, type?:string){
         super(scene, x, y);
         scene.add.existing(this);
         let windBG = scene.add.image(0,0,'windBG');
@@ -57,9 +60,9 @@ class Wnd extends Phaser.GameObjects.Container{
         if(content){
             content.setScale(0.6);
             content.x = -100;
-            content.y = -3000;
+            content.y = -1000;
             this.add(content);
-            this.type = "chat";
+            this.type = type;
         }
 
         let bar = scene.add.image(0,-200, 'bar');
@@ -143,9 +146,76 @@ class Bubble extends Phaser.GameObjects.Container{
     lines = 1;
 }
 
+class Chat extends Phaser.GameObjects.Container {
+    constructor(scene:Scene, x:number, y:number, chatArr:Array<any>){
+        super(scene, x, y);
+        scene.add.existing(this);
+        let chatPos = 0;
+        let prevY = 0;
+        let length;
+        for(let i = 0; i < chatArr.length; i++){
+            let y = 250 *i + prevY;
+            let x;
+            let texture;
+            if(chatArr[i].from === "you"){
+                x = 200;
+                texture = 'right';
+            }else{
+                x = 0;
+                texture = 'left';
+            }
+            let chat = new Bubble(scene,x, y, texture, chatArr[i].msg);
+            prevY = chat.lines*20;
+            this.add(chat);
+            length = chat.y;
+        }
+
+        scrollArea = new Phaser.GameObjects.Rectangle(scene, 150, chatPos, 1000, 2*length, 0xcfcfcf, 99.5);
+        this.add(scrollArea);
+        scrollArea.setInteractive();
+
+        //@ts-ignore
+        shape = scene.make.graphics().fillStyle(0).fillRect(20, 0, 850, 550);
+        shape.x = 400;
+        shape.y = 250;
+        this.mask = new Phaser.Display.Masks.GeometryMask(scene, shape);
+        
+        scrollArea.on('wheel', function(pointer){
+            // if(
+            //     !((chatPos/10 > scrollArea.y) && (pointer.deltaY < 0)) && 
+            //     !((-chatPos < scrollArea.y) && (pointer.deltaY > 0))
+            // ){
+                let change = -pointer.deltaY*0.5;
+                scrollArea.setY(scrollArea.y - change);
+                this.setY(this.y + change);
+            // }
+        }, this)
+
+    }
+}
+
+class Folders extends Phaser.GameObjects.Container {
+    constructor(scene, x, y, folders){
+        super(scene, x, y);
+        scene.add.existing(this);
+        
+        this.recurse(folders);
+    }
+
+    recurse(folder){
+        for (const [key, value] of Object.entries(folder)) {
+            console.log(`${key}: ${value}`);
+            if(typeof value === 'object'){
+                this.recurse(value);
+                // console.log(Object.entries(value))
+            }
+          }
+    }
+}
+
 class Scene extends Phaser.Scene {
     preload(){
-        this.load.image('hills', '../assets/grassy-hills.jpg');
+        this.load.image('hills', '../assets/background.png');
         this.load.image('chat', '../assets/chat.png');
         this.load.image('folder', '../assets/folder.png');
         this.load.image('windBG', '../assets/window.png');
@@ -163,7 +233,7 @@ class Scene extends Phaser.Scene {
 
     create(){
         let background = this.add.image(800,450,'hills');
-        background.setScale(2);
+        background.setScale(1);
         background.setInteractive();
         background.on(Phaser.Input.Events.POINTER_DOWN, function(){
             highlight.setVisible(false);
@@ -171,52 +241,14 @@ class Scene extends Phaser.Scene {
 
         let highlight:Phaser.GameObjects.Rectangle = this.add.rectangle(0, 0, 200, 200);
 
-        let chatPos = 0;
-
-        let chats = new Phaser.GameObjects.Container(this, 0,0);
-        let prevY = 0;
-        let length;
-        for(let i = 0; i < chatArr.length; i++){
-            let y = 250 *i + prevY;
-            let x;
-            let texture;
-            if(chatArr[i].from === "you"){
-                x = 200;
-                texture = 'right';
-            }else{
-                x = 0;
-                texture = 'left';
-            }
-            let chat = new Bubble(this,x, y, texture, chatArr[i].msg);
-            prevY = chat.lines*20;
-            chats.add(chat);
-            length = chat.y;
-        }
-
-        let scrollArea = new Phaser.GameObjects.Rectangle(this, 150, chatPos, 1000, 2*length, 0xcfcfcf, 99.5);
-        chats.add(scrollArea);
-        scrollArea.setInteractive();
-
-        //@ts-ignore
-        let shape = this.make.graphics().fillStyle(0).fillRect(20, 0, 850, 550);
-        shape.x = 400;
-        shape.y = 250;
-        chats.mask = new Phaser.Display.Masks.GeometryMask(this, shape);
         
-        scrollArea.on('wheel', function(pointer){
-            // if(
-            //     !((chatPos/10 > scrollArea.y) && (pointer.deltaY < 0)) && 
-            //     !((-chatPos < scrollArea.y) && (pointer.deltaY > 0))
-            // ){
-                let change = -pointer.deltaY*0.5;
-                scrollArea.setY(scrollArea.y - change);
-                chats.setY(chats.y + change);
-            // }
-        }, this)
 
+        let chats = new Chat(this,0,0,chatArr2d);
+        let folders = new Folders(this,0,0,files);
+        
         let windows = this.add.container(0,0);
         windows.setDepth(1);
-        let chatWnd = new Wnd(this, 800, 500, "Chat With Me", chats);
+        let chatWnd = new Wnd(this, 800, 500, "Chat With Me", chats, "chat");
         let folderWnd = new Wnd(this, 850, 450, "File Explorer");
         
         windows.add([chatWnd, folderWnd]);
