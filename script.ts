@@ -62,12 +62,20 @@ class Wnd extends Phaser.GameObjects.Container{
         },this);
 
         let wndTitle = scene.add.text(-300, -215, title, { fontFamily: 'Helvetica', fontSize: '28px' });
-        this.add(wndTitle);
+        this.add(wndTitle);     
         
+        
+        if(content){
+            content.setScale(0.6);
+            content.x = -100;
+            content.y = -3000;
+            this.add(content);
+        }
 
         let clickArea = new Phaser.GameObjects.Rectangle(scene,0,0, windBG.width, windBG.height, 0x707070,99);
         clickArea.setInteractive();
         this.add(clickArea);
+        // clickArea.setVisible(false);
         clickArea.on(Phaser.Input.Events.POINTER_DOWN, function(){
             this.parentContainer.bringToTop(this);
             for(let i = 0; i < this.parentContainer.getAll().length; i++){
@@ -81,14 +89,14 @@ class Wnd extends Phaser.GameObjects.Container{
             }
         },this); 
         
+        
         let close = scene.add.image(300,-200, 'close');
         close.setScale(0.1);
         this.add(close);
         close.setInteractive();
         close.on(Phaser.Input.Events.POINTER_DOWN, function(){
             this.setVisible(false);
-        }, this)
-        
+        }, this);
     }
     zInd = 0;
 }
@@ -162,15 +170,11 @@ class Scene extends Phaser.Scene {
 
         let highlight:Phaser.GameObjects.Rectangle = this.add.rectangle(0, 0, 200, 200);
 
-        let windows = this.add.container(0,0);
-        windows.setDepth(1);
-        let chatWnd = new Wnd(this, 800, 500, "Chat With Me");
-        let folderWnd = new Wnd(this, 850, 450, "File Explorer");
-
         let chatPos = -200*chatArr.length - 200;
 
-        let chats = this.add.container(600,chatPos);
+        let chats = new Phaser.GameObjects.Container(this, 600, chatPos);
         let prevY = 0;
+        let length;
         for(let i = 0; i < chatArr.length; i++){
             let y = 250 *i + prevY;
             let x;
@@ -185,30 +189,38 @@ class Scene extends Phaser.Scene {
             let chat = new Bubble(this,x, y, texture, chatArr[i].msg);
             prevY = chat.lines*20;
             chats.add(chat);
+            length = chat.y;
         }
 
-        let scrollArea = new Phaser.GameObjects.Rectangle(this, 200,-chatPos + 400, 1000, 800, 0xcfcfcf, 99.5);
+        console.log(length);
+        let scrollArea = new Phaser.GameObjects.Rectangle(this, 180, 800, 930, 2*length, 0xcfcfcf, 99.5);
+        // scrollArea.x = 400;
+        // scrollArea.y = 250;
         scrollArea.setInteractive();
 
         //@ts-ignore
-        let shape = this.make.graphics().fillStyle(0).fillRect(0, 0, 1000, 700);
-        shape.x = 300;
-        shape.y = 100;
+        let shape = this.make.graphics().fillStyle(0).fillRect(20, 0, 850, 550);
+        shape.x = 400;
+        shape.y = 250;
         chats.add(scrollArea);
         chats.mask = new Phaser.Display.Masks.GeometryMask(this, shape);
+        // scrollArea.mask = new Phaser.Display.Masks.GeometryMask(this, shape);
         
-
-
         scrollArea.on('wheel', function(pointer){
-            if(
-                !((chatPos/10 > scrollArea.y) && (pointer.deltaY < 0)) && 
-                !((-chatPos < scrollArea.y) && (pointer.deltaY > 0))
-            ){
+            // if(
+            //     !((chatPos/10 > scrollArea.y) && (pointer.deltaY < 0)) && 
+            //     !((-chatPos < scrollArea.y) && (pointer.deltaY > 0))
+            // ){
                 let change = -pointer.deltaY*0.5;
                 scrollArea.setY(scrollArea.y - change);
                 chats.setY(chats.y + change);
-            }
+            // }
         }, this)
+
+        let windows = this.add.container(0,0);
+        windows.setDepth(1);
+        let chatWnd = new Wnd(this, 800, 500, "Chat With Me", chats);
+        let folderWnd = new Wnd(this, 850, 450, "File Explorer");
         
         windows.add([chatWnd, folderWnd]);
         let chat:Icon = new Icon(this, 100, 100,'chat', highlight, chatWnd);
@@ -217,6 +229,8 @@ class Scene extends Phaser.Scene {
         this.input.on('pointermove', function(e){
             if(draggedItem){
                 draggedItem.setPosition(draggedItem.x + e.position.x - e.prevPosition.x, draggedItem.y + e.position.y - e.prevPosition.y);
+                shape.setPosition(shape.x + e.position.x - e.prevPosition.x, shape.y + e.position.y - e.prevPosition.y);
+                scrollArea.setPosition(scrollArea.x + e.position.x - e.prevPosition.x, scrollArea.y + e.position.y - e.prevPosition.y);
 
                 this.input.on(Phaser.Input.Events.POINTER_UP, function(){
                     draggedItem = null;
