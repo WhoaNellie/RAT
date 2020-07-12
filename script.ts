@@ -270,7 +270,15 @@ class Folders extends Phaser.GameObjects.Container {
             if(key === 'files'){
                 // @ts-ignore
                 for(let j = 0; j < value.length; j++){
-                    icon = new SubIcon(scene, (j)*200, 0, 'document', value[j].name, value, folder);
+                    let texture;
+                    if(value[j].type === 'img'){
+                        texture = 'photo';
+                    }else if(value[j].type === 'exe'){
+                        texture = 'rat';
+                    }else{
+                        texture = 'document';
+                    }
+                    icon = new SubIcon(scene, (j)*200, 0, texture, value[j].name, value, folder);
                     icons.push(icon);
                 }
             }else{
