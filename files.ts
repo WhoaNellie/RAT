@@ -9,7 +9,7 @@ const files = {
     },
     "Photos":{
         files: [
-            {name: "terriblephoto.jpg", type:"img"}
+            {name: "okphoto.jpg", type:"img"}
         ]
     },
     "secret": {

@@ -70,7 +70,7 @@ class SubIcon extends Phaser.GameObjects.Container{
                 let newFolders;
                 
                 if(prevFolders.length > 0){
-                    let back = new Phaser.GameObjects.Image(scene, -50, -130, 'back');
+                    let back = new Phaser.GameObjects.Image(scene, 270, 180, 'back');
                     back.setScale(0.15);
                     back.setInteractive();
                     back.on(Phaser.Input.Events.POINTER_DOWN, function(){
@@ -78,8 +78,7 @@ class SubIcon extends Phaser.GameObjects.Container{
                         foldContext.removeAll();
                         newFolders = new Folders(scene, 300, 300, prevFolders.pop());
                         folderWnd.replace(folderWnd.getAt(1),newFolders);
-                        
-                        this.remove();
+                        back.destroy();
                     }, this)
                     
                     folderWnd.add(back);
