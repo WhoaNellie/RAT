@@ -5,6 +5,7 @@ let shape;
 let mode;
 let folderWnd;
 let prevFolders = [];
+let backward = false;
 
 import chatArr2d from './chats';
 import files from './files';
@@ -62,26 +63,33 @@ class SubIcon extends Phaser.GameObjects.Container{
         icon.on(Phaser.Input.Events.POINTER_DOWN, function() {
             click++;
             if(click >= 2){
-                this.parentContainer.removeAll();
+                // backward = false;
+                let foldContext = this.parentContainer;
+                foldContext.removeAll();
                 prevFolders.push(previous);
                 let newFolders;
                 
                 if(prevFolders.length > 0){
-                    console.log(prevFolders);
                     let back = new Phaser.GameObjects.Image(scene, -50, -130, 'back');
                     back.setScale(0.15);
                     back.setInteractive();
-                    folderWnd.add(back);
-        
                     back.on(Phaser.Input.Events.POINTER_DOWN, function(){
-                        console.log(prevFolders);
+                        backward = true;
+                        foldContext.removeAll();
                         newFolders = new Folders(scene, 300, 300, prevFolders.pop());
-                        console.log(prevFolders);
+                        folderWnd.replace(folderWnd.getAt(1),newFolders);
+                        
+                        this.remove();
                     }, this)
+                    
+                    folderWnd.add(back);
+                    newFolders = new Folders(scene, 300, 300, clickData);
+                                
                 }else{
                     newFolders = new Folders(scene, 300, 300, clickData);
                 }
-                folderWnd.add(newFolders);
+                folderWnd.replace(folderWnd.getAt(1),newFolders);
+                
             }
             this.doubleClickTimer();
         }, this);
@@ -250,11 +258,9 @@ class Folders extends Phaser.GameObjects.Container {
     constructor(scene, x, y, folders, previous?){
         super(scene, x, y);
         scene.add.existing(this);
-        
+        this.removeAll();
         let icons = this.folderIcons(folders, scene);
         this.add(icons);
-
-        
     }
 
     folderIcons(folder, scene){
