@@ -4,10 +4,10 @@ let scrollArea;
 let shape;
 let mode;
 let folderWnd;
+let prevFolders = [];
 
 import chatArr2d from './chats';
 import files from './files';
-
 
 class Icon extends Phaser.GameObjects.Image{
     constructor(scene:Scene, x:number, y:number, texture:string, highlight:Phaser.GameObjects.Rectangle, wnd?){
@@ -49,7 +49,7 @@ class Icon extends Phaser.GameObjects.Image{
 }
 
 class SubIcon extends Phaser.GameObjects.Container{
-    constructor(scene, x, y, texture, name, clickData){
+    constructor(scene, x, y, texture, name, clickData, previous?){
         super(scene, x, y);
         scene.add.existing(this);
         this.setInteractive();
@@ -60,11 +60,27 @@ class SubIcon extends Phaser.GameObjects.Container{
         this.add([icon,fileName]);
 
         icon.on(Phaser.Input.Events.POINTER_DOWN, function() {
-            console.log('slick');
             click++;
             if(click >= 2){
                 this.parentContainer.removeAll();
-                let newFolders = new Folders(scene, 300,300, clickData);
+                prevFolders.push(previous);
+                let newFolders;
+                
+                if(prevFolders.length > 0){
+                    console.log(prevFolders);
+                    let back = new Phaser.GameObjects.Image(scene, -50, -130, 'back');
+                    back.setScale(0.15);
+                    back.setInteractive();
+                    folderWnd.add(back);
+        
+                    back.on(Phaser.Input.Events.POINTER_DOWN, function(){
+                        console.log(prevFolders);
+                        newFolders = new Folders(scene, 300, 300, prevFolders.pop());
+                        console.log(prevFolders);
+                    }, this)
+                }else{
+                    newFolders = new Folders(scene, 300, 300, clickData);
+                }
                 folderWnd.add(newFolders);
             }
             this.doubleClickTimer();
@@ -238,10 +254,7 @@ class Folders extends Phaser.GameObjects.Container {
         let icons = this.folderIcons(folders, scene);
         this.add(icons);
 
-        if(previous){
-            let back = new Phaser.GameObjects.Image(scene, 300, 400, 'back');
-        }
-
+        
     }
 
     folderIcons(folder, scene){
@@ -250,9 +263,13 @@ class Folders extends Phaser.GameObjects.Container {
             let [key, value]= Object.entries(folder)[i];
             let icon;
             if(key === 'files'){
-                console.log(value, "file");
+                // @ts-ignore
+                for(let j = 0; j < value.length; j++){
+                    icon = new SubIcon(scene, (j)*200, 0, 'document', value[j].name, value, folder);
+                    icons.push(icon);
+                }
             }else{
-                icon = new SubIcon(scene, (i)*200, 0, 'subfolder', key, value);
+                icon = new SubIcon(scene, (i)*200, 0, 'subfolder', key, value, folder);
             }
 
             icons.push(icon);
