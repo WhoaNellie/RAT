@@ -2,13 +2,15 @@ let click = 0;
 let draggedItem;
 let scrollArea;
 let shape;
+let mode;
+let folderWnd;
 
 import chatArr2d from './chats';
 import files from './files';
 
 
 class Icon extends Phaser.GameObjects.Image{
-    constructor(scene:Scene, x:number, y:number, texture:string, highlight:Phaser.GameObjects.Rectangle, wnd){
+    constructor(scene:Scene, x:number, y:number, texture:string, highlight:Phaser.GameObjects.Rectangle, wnd?){
         super(scene, x, y, texture);
         scene.add.existing(this);
         this.setInteractive();
@@ -46,8 +48,39 @@ class Icon extends Phaser.GameObjects.Image{
     }
 }
 
+class SubIcon extends Phaser.GameObjects.Container{
+    constructor(scene, x, y, texture, name, clickData){
+        super(scene, x, y);
+        scene.add.existing(this);
+        this.setInteractive();
+        let icon = new Phaser.GameObjects.Image(scene,-530,-400,texture);
+        icon.setScale(0.16);
+        icon.setInteractive();
+        let fileName = new Phaser.GameObjects.Text(scene, -580, -350, name, { fontFamily: 'Helvetica', fontSize: '28px', color: 'black' });
+        this.add([icon,fileName]);
+
+        icon.on(Phaser.Input.Events.POINTER_DOWN, function() {
+            console.log('slick');
+            click++;
+            if(click >= 2){
+                this.parentContainer.removeAll();
+                let newFolders = new Folders(scene, 300,300, clickData);
+                folderWnd.add(newFolders);
+            }
+            this.doubleClickTimer();
+        }, this);
+        
+    }
+
+    doubleClickTimer(){
+        setTimeout(function(){
+            click = 0;
+        },700);
+    }
+}
+
 class Wnd extends Phaser.GameObjects.Container{
-    constructor(scene:Scene, x:number, y:number, title:string, content?:Phaser.GameObjects.Container, type?:string){
+    constructor(scene:Scene, x:number, y:number, title:string, content:Phaser.GameObjects.Container, type:string){
         super(scene, x, y);
         scene.add.existing(this);
         let windBG = scene.add.image(0,0,'windBG');
@@ -57,10 +90,13 @@ class Wnd extends Phaser.GameObjects.Container{
         this.setVisible(false);
         this.setSize(windBG.width, windBG.height);
 
-        if(content){
+        if(type === 'chat'){
             content.setScale(0.6);
             content.x = -100;
             content.y = -1000;
+            this.add(content);
+            this.type = type;
+        }else if(type === 'files'){
             this.add(content);
             this.type = type;
         }
@@ -195,21 +231,37 @@ class Chat extends Phaser.GameObjects.Container {
 }
 
 class Folders extends Phaser.GameObjects.Container {
-    constructor(scene, x, y, folders){
+    constructor(scene, x, y, folders, previous?){
         super(scene, x, y);
         scene.add.existing(this);
         
-        this.recurse(folders);
+        let icons = this.folderIcons(folders, scene);
+        this.add(icons);
+
+        if(previous){
+            let back = new Phaser.GameObjects.Image(scene, 300, 400, 'back');
+        }
+
     }
 
-    recurse(folder){
-        for (const [key, value] of Object.entries(folder)) {
-            console.log(`${key}: ${value}`);
-            if(typeof value === 'object'){
-                this.recurse(value);
-                // console.log(Object.entries(value))
+    folderIcons(folder, scene){
+        let icons = [];
+        for (let i = 0; i < Object.entries(folder).length; i++) {
+            let [key, value]= Object.entries(folder)[i];
+            let icon;
+            if(key === 'files'){
+                console.log(value, "file");
+            }else{
+                icon = new SubIcon(scene, (i)*200, 0, 'subfolder', key, value);
             }
+
+            icons.push(icon);
+
+            // if(typeof value === 'object'){
+            //     this.recurse(value, scene);
+            // }
           }
+        return icons;
     }
 }
 
@@ -229,6 +281,11 @@ class Scene extends Phaser.Scene {
         this.load.image('right-top', '../assets/right-top.png');
         this.load.image('right-middle', '../assets/right-middle.png');
         this.load.image('right-bottom', '../assets/right-bottom.png');
+        this.load.image('subfolder', '../assets/subfolder.png');
+        this.load.image('photo', '../assets/photo.png');
+        this.load.image('document', '../assets/document.png');
+        this.load.image('rat', '../assets/rat.png');
+        this.load.image('back', '../assets/folder-up.png');
     }
 
     create(){
@@ -239,17 +296,31 @@ class Scene extends Phaser.Scene {
             highlight.setVisible(false);
         }, this);
 
+        let canvas = this.sys.canvas;
+        let ctrl = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.CTRL);
+        this.input.setDefaultCursor('default');
+        // canvas.style.cursor = 'none';
+        mode = 'normal';
+        ctrl.on('down', function(){
+            if(mode === 'normal'){   
+                this.input.setDefaultCursor('url(../assets/rat-cursor.png), pointer');
+                mode = 'rat';
+            }else{
+                // canvas.style.cursor = 'none';
+                this.input.setDefaultCursor('default');
+                mode = 'normal';
+            }
+        }, this)
+
         let highlight:Phaser.GameObjects.Rectangle = this.add.rectangle(0, 0, 200, 200);
 
-        
-
         let chats = new Chat(this,0,0,chatArr2d);
-        let folders = new Folders(this,0,0,files);
+        let folders = new Folders(this,300,300,files);
         
         let windows = this.add.container(0,0);
         windows.setDepth(1);
         let chatWnd = new Wnd(this, 800, 500, "Chat With Me", chats, "chat");
-        let folderWnd = new Wnd(this, 850, 450, "File Explorer");
+        folderWnd = new Wnd(this, 850, 450, "File Explorer", folders, "files");
         
         windows.add([chatWnd, folderWnd]);
         let chat:Icon = new Icon(this, 100, 100,'chat', highlight, chatWnd);
