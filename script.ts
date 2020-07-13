@@ -5,7 +5,7 @@ let shape;
 let mode;
 let folderWnd;
 let prevFolders = [];
-let backward = false;
+let del;
 
 import chatArr2d from './chats';
 import files from './files';
@@ -59,11 +59,17 @@ class SubIcon extends Phaser.GameObjects.Container{
         icon.setInteractive();
         let fileName = new Phaser.GameObjects.Text(scene, -580, -350, name, { fontFamily: 'Helvetica', fontSize: '28px', color: 'black' });
         this.add([icon,fileName]);
-
+        if(!del && folderWnd){
+            del = new Phaser.GameObjects.Image(scene, -270, 180, 'delete');
+            del.setInteractive();
+            folderWnd.add(del);
+            del.setVisible(false);
+        }
+    
         icon.on(Phaser.Input.Events.POINTER_DOWN, function() {
             click++;
             if(click >= 2){
-                // backward = false;
+                del?.setVisible(false);
                 let foldContext = this.parentContainer;
                 foldContext.removeAll();
                 prevFolders.push(previous);
@@ -74,11 +80,11 @@ class SubIcon extends Phaser.GameObjects.Container{
                     back.setScale(0.15);
                     back.setInteractive();
                     back.on(Phaser.Input.Events.POINTER_DOWN, function(){
-                        backward = true;
                         foldContext.removeAll();
                         newFolders = new Folders(scene, 300, 300, prevFolders.pop());
                         folderWnd.replace(folderWnd.getAt(1),newFolders);
                         back.destroy();
+                        del?.setVisible(false);
                     }, this)
                     
                     folderWnd.add(back);
@@ -89,6 +95,22 @@ class SubIcon extends Phaser.GameObjects.Container{
                 }
                 folderWnd.replace(folderWnd.getAt(1),newFolders);
                 
+            }else{
+                for(let i = 0; i < this.parentContainer.getAll().length; i++){
+                    this.parentContainer.getAt(i).getAt(0).setTint();
+                }
+                if(!del && folderWnd){
+                    del = new Phaser.GameObjects.Image(scene, -270, 180, 'delete');
+                    del.setInteractive();
+                    folderWnd.add(del);
+                    del.setVisible(false);
+                }
+                icon.setTint(0xffcfcf);
+                del.setScale(0.1);
+                del.setVisible(true);
+                del.on(Phaser.Input.Events.POINTER_DOWN, function(){
+                    console.log('delete');
+                }, this);
             }
             this.doubleClickTimer();
         }, this);
@@ -260,6 +282,7 @@ class Folders extends Phaser.GameObjects.Container {
         this.removeAll();
         let icons = this.folderIcons(folders, scene);
         this.add(icons);
+        let highlight:Phaser.GameObjects.Rectangle = scene.add.rectangle(0, 0, 200, 200);
     }
 
     folderIcons(folder, scene){
@@ -316,6 +339,7 @@ class Scene extends Phaser.Scene {
         this.load.image('document', '../assets/document.png');
         this.load.image('rat', '../assets/rat.png');
         this.load.image('back', '../assets/folder-up.png');
+        this.load.image('delete', '../assets/delete.png');
     }
 
     create(){
